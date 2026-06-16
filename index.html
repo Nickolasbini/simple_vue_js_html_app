@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minha Primeira App Vue.js</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Vue.js 3 via CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen font-sans">
+
+  <div id="app" class="max-w-xl mx-auto px-4 py-12">
+
+    <!-- Cabeçalho -->
+    <div class="mb-10 text-center">
+      <h1 class="text-3xl font-bold text-green-400 mb-1">Lista de Tarefas</h1>
+      <p class="text-gray-400 text-sm">Criado com Vue.js 3 - Código Prático</p>
+    </div>
+
+    <!-- Contador reativo -->
+    <div class="flex justify-center gap-8 mb-8">
+      <div class="text-center">
+        <p class="text-3xl font-bold text-white">{{ tarefas.length }}</p>
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+      </div>
+      <div class="text-center">
+        <p class="text-3xl font-bold text-green-400">{{ tarefasConcluidas }}</p>
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Feitas</p>
+      </div>
+      <div class="text-center">
+        <p class="text-3xl font-bold text-yellow-400">{{ tarefasPendentes }}</p>
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Pendentes</p>
+      </div>
+    </div>
+
+    <!-- Formulário para adicionar tarefa -->
+    <div class="flex gap-2 mb-6">
+      <input
+        v-model="novaTarefa"
+        @keyup.enter="adicionarTarefa"
+        type="text"
+        placeholder="Digite uma nova tarefa..."
+        class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition"
+      />
+      <button
+        @click="adicionarTarefa"
+        class="bg-green-500 hover:bg-green-400 text-black font-semibold text-sm px-5 py-2 rounded-lg transition"
+      >
+        Adicionar
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="flex gap-2 mb-4">
+      <button
+        v-for="filtro in filtros"
+        :key="filtro.valor"
+        @click="filtroAtivo = filtro.valor"
+        :class="[
+          'text-xs px-3 py-1 rounded-full border transition',
+          filtroAtivo === filtro.valor
+            ? 'bg-green-500 border-green-500 text-black font-bold'
+            : 'border-gray-700 text-gray-400 hover:border-gray-500'
+        ]"
+      >
+        {{ filtro.label }}
+      </button>
+    </div>
+
+    <!-- Lista de tarefas -->
+    <ul class="space-y-2">
+      <li
+        v-for="tarefa in tarefasFiltradas"
+        :key="tarefa.id"
+        class="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 group transition hover:border-gray-600"
+      >
+        <!-- Checkbox -->
+        <input
+          type="checkbox"
+          v-model="tarefa.concluida"
+          class="w-4 h-4 accent-green-500 cursor-pointer"
+        />
+
+        <!-- Texto -->
+        <span
+          :class="[
+            'flex-1 text-sm transition',
+            tarefa.concluida ? 'line-through text-gray-600' : 'text-white'
+          ]"
+        >
+          {{ tarefa.texto }}
+        </span>
+
+        <!-- Botão remover -->
+        <button
+          @click="removerTarefa(tarefa.id)"
+          class="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition"
+        >
+          ✕
+        </button>
+      </li>
+    </ul>
+
+    <!-- Estado vazio -->
+    <div v-if="tarefasFiltradas.length === 0" class="text-center py-10 text-gray-600 text-sm">
+      Nenhuma tarefa aqui ainda.
+    </div>
+
+    <!-- Botão limpar concluídas -->
+    <div class="mt-6 text-center">
+      <button
+        v-if="tarefasConcluidas > 0"
+        @click="limparConcluidas"
+        class="text-xs text-gray-500 hover:text-red-400 transition underline"
+      >
+        Limpar tarefas concluídas ({{ tarefasConcluidas }})
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref, computed } = Vue
+
+    createApp({
+      setup() {
+
+        // ─── Estado ───────────────────────────────────────────────
+        const novaTarefa = ref('')
+        const filtroAtivo = ref('todas')
+        const proximoId = ref(1)
+
+        const tarefas = ref([
+          { id: proximoId.value++, texto: 'Assistir ao vídeo até o final', concluida: true },
+          { id: proximoId.value++, texto: 'Praticar Vue.js hoje', concluida: false },
+          { id: proximoId.value++, texto: 'Se inscrever no canal 😄', concluida: false },
+        ])
+
+        const filtros = [
+          { label: 'Todas', valor: 'todas' },
+          { label: 'Pendentes', valor: 'pendentes' },
+          { label: 'Feitas', valor: 'feitas' },
+        ]
+
+        // ─── Computed ─────────────────────────────────────────────
+        const tarefasConcluidas = computed(() =>
+          tarefas.value.filter(t => t.concluida).length
+        )
+
+        const tarefasPendentes = computed(() =>
+          tarefas.value.filter(t => !t.concluida).length
+        )
+
+        const tarefasFiltradas = computed(() => {
+          if (filtroAtivo.value === 'feitas')    return tarefas.value.filter(t => t.concluida)
+          if (filtroAtivo.value === 'pendentes') return tarefas.value.filter(t => !t.concluida)
+          return tarefas.value
+        })
+
+        // ─── Métodos ──────────────────────────────────────────────
+        function adicionarTarefa() {
+          const texto = novaTarefa.value.trim()
+          if (!texto) return
+
+          tarefas.value.push({
+            id: proximoId.value++,
+            texto,
+            concluida: false,
+          })
+
+          novaTarefa.value = ''
+        }
+
+        function removerTarefa(id) {
+          tarefas.value = tarefas.value.filter(t => t.id !== id)
+        }
+
+        function limparConcluidas() {
+          tarefas.value = tarefas.value.filter(t => !t.concluida)
+        }
+
+        // ─── Expor para o template ─────────────────────────────────
+        return {
+          novaTarefa,
+          filtroAtivo,
+          tarefas,
+          filtros,
+          tarefasConcluidas,
+          tarefasPendentes,
+          tarefasFiltradas,
+          adicionarTarefa,
+          removerTarefa,
+          limparConcluidas,
+        }
+      }
+    }).mount('#app')
+  </script>
+
+</body>
+</html>
